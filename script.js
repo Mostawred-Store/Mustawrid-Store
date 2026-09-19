@@ -45,6 +45,7 @@ async function loadProducts() {
 
 function displayProducts(products) {
   const container = document.getElementById('products-list');
+  if (!container) return;
   container.innerHTML = '';
 
   products.forEach((p, index) => {
@@ -84,10 +85,19 @@ function changeCardQty(index, amount) {
   input.value = current;
 }
 
-// 🚀 أنيميشن طيران الصورة باتجاه السلة 🚀
+// 🚀 أنيميشن طيران الصورة باتجاه السلة (محسّنة للموبايل والكمبيوتر) 🚀
 function addToCartWithFlyAnimation(event, index) {
-  const imgElement = document.getElementById(`prod-img-${index}`);
-  const cartBtn = document.getElementById('cart-header-btn');
+  const btnNode = event ? event.currentTarget : null;
+  const cardNode = btnNode ? btnNode.closest('.card') : null;
+  const imgElement = cardNode ? cardNode.querySelector('img') : document.getElementById(`prod-img-${index}`);
+  
+  let cartBtn = document.getElementById('cart-header-btn');
+  const mobileBar = document.getElementById('mobile-cart-bar');
+
+  // إذا كنا على شاشة الموبايل والشريط السفلي ظاهر، نطير الصورة نحو زر الموبايل السفلي
+  if (mobileBar && window.getComputedStyle(mobileBar).display !== "none") {
+    cartBtn = mobileBar;
+  }
 
   if (imgElement && cartBtn) {
     const imgRect = imgElement.getBoundingClientRect();
@@ -124,7 +134,8 @@ function addToCartWithFlyAnimation(event, index) {
 }
 
 function processAddToCart(index) {
-  const qty = parseInt(document.getElementById(`qty-input-${index}`).value) || 1;
+  const qtyInput = document.getElementById(`qty-input-${index}`);
+  const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
   const prod = allProducts[index];
 
   const existingIndex = cart.findIndex(item => item.title === prod.title);
@@ -148,9 +159,11 @@ function triggerCartBounceGlow() {
   const cartBtn = document.getElementById('cart-header-btn');
   const badge = document.getElementById('cart-count');
 
-  cartBtn.classList.remove('cart-bounce-glow');
-  void cartBtn.offsetWidth; // Trigger Reflow
-  cartBtn.classList.add('cart-bounce-glow');
+  if (cartBtn) {
+    cartBtn.classList.remove('cart-bounce-glow');
+    void cartBtn.offsetWidth; // Reflow
+    cartBtn.classList.add('cart-bounce-glow');
+  }
 
   if (badge) {
     badge.classList.add('pop');
@@ -186,15 +199,19 @@ function updateCartBadge() {
   const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-  document.getElementById('cart-count').innerText = totalCount;
+  const cartCountEl = document.getElementById('cart-count');
+  if (cartCountEl) cartCountEl.innerText = totalCount;
   
-  // تحديث شريط الموبايل السفلي
-  document.getElementById('mobile-cart-count-val').innerText = totalCount;
-  document.getElementById('mobile-cart-total-val').innerText = subtotal;
+  const mobCartCount = document.getElementById('mobile-cart-count-val');
+  const mobCartTotal = document.getElementById('mobile-cart-total-val');
+  if (mobCartCount) mobCartCount.innerText = totalCount;
+  if (mobCartTotal) mobCartTotal.innerText = subtotal;
 }
 
 function renderCartItems() {
   const container = document.getElementById('cart-items-container');
+  if (!container) return;
+
   if (cart.length === 0) {
     container.innerHTML = '<p style="text-align:center; color:#64748b; padding:15px;">السلة فارغة حالياً</p>';
     return;
@@ -225,18 +242,23 @@ function selectShippingType(type) {
   document.querySelectorAll('.shipping-card').forEach(card => card.classList.remove('active'));
   
   if (type === 'door') {
-    document.getElementById('card-door').classList.add('active');
-    document.querySelector('input[name="shippingType"][value="door"]').checked = true;
+    const cardDoor = document.getElementById('card-door');
+    if (cardDoor) cardDoor.classList.add('active');
+    const inputDoor = document.querySelector('input[name="shippingType"][value="door"]');
+    if (inputDoor) inputDoor.checked = true;
   } else {
-    document.getElementById('card-post').classList.add('active');
-    document.querySelector('input[name="shippingType"][value="post"]').checked = true;
+    const cardPost = document.getElementById('card-post');
+    if (cardPost) cardPost.classList.add('active');
+    const inputPost = document.querySelector('input[name="shippingType"][value="post"]');
+    if (inputPost) inputPost.checked = true;
   }
   updateCartTotal();
 }
 
 function updateCartTotal() {
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  document.getElementById('subtotal-val').innerText = subtotal;
+  const subtotalValEl = document.getElementById('subtotal-val');
+  if (subtotalValEl) subtotalValEl.innerText = subtotal;
 
   const freeThreshold = 1000;
   const progressPercent = Math.min((subtotal / freeThreshold) * 100, 100);
@@ -253,8 +275,10 @@ function updateCartTotal() {
   }
 
   const govSelect = document.getElementById('shippingGov');
-  const selectedOption = govSelect.options[govSelect.selectedIndex];
-  const shippingType = document.querySelector('input[name="shippingType"]:checked').value;
+  const selectedOption = govSelect ? govSelect.options[govSelect.selectedIndex] : null;
+  const shippingTypeRadio = document.querySelector('input[name="shippingType"]:checked');
+  const shippingType = shippingTypeRadio ? shippingTypeRadio.value : 'door';
+  
   const liveInfoBox = document.getElementById('shipping-live-info');
   const liveInfoText = document.getElementById('shipping-live-text');
 
@@ -263,19 +287,19 @@ function updateCartTotal() {
   if (selectedOption && selectedOption.value !== "") {
     if (subtotal >= freeThreshold) {
       shippingCost = 0;
-      if (liveInfoBox) {
+      if (liveInfoBox && liveInfoText) {
         liveInfoBox.style.display = 'flex';
         liveInfoText.innerText = `الشحن مجاني بالكامل إلى محافظة ${selectedOption.value}! 🎁`;
       }
     } else if (shippingType === 'post') {
       shippingCost = 45;
-      if (liveInfoBox) {
+      if (liveInfoBox && liveInfoText) {
         liveInfoBox.style.display = 'flex';
         liveInfoText.innerText = `استلام من أقرب مكتب بريد بـ ${selectedOption.value} (رسوم ثابتة: 45 ج.م)`;
       }
     } else {
       shippingCost = parseInt(selectedOption.getAttribute('data-door')) || 0;
-      if (liveInfoBox) {
+      if (liveInfoBox && liveInfoText) {
         liveInfoBox.style.display = 'flex';
         liveInfoText.innerText = `توصيل لباب البيت في ${selectedOption.value} (التكلفة: ${shippingCost} ج.م)`;
       }
@@ -284,8 +308,11 @@ function updateCartTotal() {
     if (liveInfoBox) liveInfoBox.style.display = 'none';
   }
 
-  document.getElementById('shipping-val').innerText = shippingCost;
-  document.getElementById('grandtotal-val').innerText = subtotal + shippingCost;
+  const shippingValEl = document.getElementById('shipping-val');
+  const grandTotalValEl = document.getElementById('grandtotal-val');
+
+  if (shippingValEl) shippingValEl.innerText = shippingCost;
+  if (grandTotalValEl) grandTotalValEl.innerText = subtotal + shippingCost;
 }
 
 async function submitOrder(e) {
@@ -297,23 +324,28 @@ async function submitOrder(e) {
   }
 
   const govSelect = document.getElementById('shippingGov');
-  if (!govSelect.value) {
+  if (!govSelect || !govSelect.value) {
     alert("⚠️ يرجى اختيار المحافظة.");
     return;
   }
 
   const submitBtn = document.getElementById('submitBtn');
-  submitBtn.disabled = true;
-  submitBtn.innerText = "جاري إرسال الطلب...";
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerText = "جاري إرسال الطلب...";
+  }
 
   const custName = document.getElementById('custName').value;
   const custPhone = document.getElementById('custPhone').value;
   const custGov = govSelect.value;
   const custAddress = document.getElementById('custAddress').value;
-  const shippingType = document.querySelector('input[name="shippingType"]:checked').value === 'post' ? 'أقرب مكتب بريد' : 'باب البيت';
+  
+  const shippingTypeRadio = document.querySelector('input[name="shippingType"]:checked');
+  const shippingType = (shippingTypeRadio && shippingTypeRadio.value === 'post') ? 'أقرب مكتب بريد' : 'باب البيت';
 
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const shippingCost = parseInt(document.getElementById('shipping-val').innerText);
+  const shippingCostEl = document.getElementById('shipping-val');
+  const shippingCost = shippingCostEl ? parseInt(shippingCostEl.innerText) : 0;
   const grandTotal = subtotal + shippingCost;
 
   let productsSummary = cart.map(i => `• ${i.title} (الكمية: ${i.qty}) - ${i.price * i.qty} ج.م`).join('\n');
@@ -361,8 +393,10 @@ async function submitOrder(e) {
   } catch (err) {
     alert('⚠️ حدث خطأ أثناء الإرسال.');
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = "📲 تأكيد وإرسال الطلب عبر الواتساب";
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "📲 تأكيد وإرسال الطلب عبر الواتساب";
+    }
   }
 }
 
@@ -386,10 +420,14 @@ function startTimer() {
 
 function showToast(msg) {
   const toast = document.getElementById('toast');
-  document.getElementById('toast-message').innerText = msg;
-  toast.classList.add('show');
-  setTimeout(() => { toast.classList.remove('show'); }, 3000);
+  const toastMsg = document.getElementById('toast-message');
+  if (toast && toastMsg) {
+    toastMsg.innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+  }
 }
 
+// تشغيل جلب المنتجات والعداد عند البدء
 loadProducts();
 startTimer();
