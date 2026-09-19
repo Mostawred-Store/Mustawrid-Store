@@ -16,7 +16,7 @@ const fallbackProducts = [
     price: 120,
     badge: "جديد",
     image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500&q=80",
-    description: "عوامة صيد ذكية بمستشعر حركي يتغير لونها للأسود/الأحمر عند السحب، تأتي مع بطارية قابلة لإعادة الشحن وشاحن USB."
+    description: "عوامة صيد ذكية بمستشعر حركي يتغير لونها عند السحب، تأتي مع بطارية قابلة لإعادة الشحن وشاحن USB."
   },
   {
     id: 3,
@@ -31,7 +31,6 @@ const fallbackProducts = [
 let allProducts = [];
 let cart = [];
 
-// 1. جلب وعرض المنتجات
 async function loadProducts() {
   try {
     const res = await fetch(API_URL);
@@ -50,14 +49,13 @@ function displayProducts(products) {
 
   products.forEach((p, index) => {
     container.innerHTML += `
-      <div class="card">
+      <div class="card" id="product-card-${index}">
         ${p.badge ? `<span class="card-badge">${p.badge}</span>` : ''}
-        <img src="${p.image || 'https://via.placeholder.com/300'}" alt="${p.title}">
+        <img src="${p.image || 'https://via.placeholder.com/300'}" alt="${p.title}" id="prod-img-${index}">
         <div class="card-body">
           <h3>${p.title}</h3>
           <div class="price-tag">${p.price} <span>ج.م</span></div>
 
-          <!-- التحكم بالكمية من بره -->
           <div class="card-qty-control">
             <label>الكمية:</label>
             <div class="qty-picker">
@@ -67,11 +65,10 @@ function displayProducts(products) {
             </div>
           </div>
 
-          <!-- الأزرار الرئيسية المباشرة من بره -->
           <div class="card-actions">
-            <button class="btn btn-add" onclick="addToCartDirect(${index})">➕ إضافة للسلة ومتابعة التسوق</button>
+            <button class="btn btn-add" onclick="addToCartWithFlyAnimation(event, ${index})">➕ إضافة للسلة ومتابعة التسوق</button>
             <button class="btn btn-checkout" onclick="checkoutDirect(${index})">🛒 الذهاب للسلة وإتمام الطلب</button>
-            <button class="btn btn-details" onclick="openProductModal(${index})">👁️ عرض التفاصيل</button>
+            <button class="btn btn-details" onclick="openProductModal(${index})">👁️ التفاصيل</button>
           </div>
         </div>
       </div>
@@ -87,8 +84,46 @@ function changeCardQty(index, amount) {
   input.value = current;
 }
 
-// 2. إضافات المنتجات والتأثيرات
-function addToCartDirect(index) {
+// 🚀 أنيميشن طيران الصورة باتجاه السلة 🚀
+function addToCartWithFlyAnimation(event, index) {
+  const imgElement = document.getElementById(`prod-img-${index}`);
+  const cartBtn = document.getElementById('cart-header-btn');
+
+  if (imgElement && cartBtn) {
+    const imgRect = imgElement.getBoundingClientRect();
+    const cartRect = cartBtn.getBoundingClientRect();
+
+    // إنشاء صورة طائرة مؤقتة
+    const flyImg = imgElement.cloneNode();
+    flyImg.classList.add('flying-img');
+    flyImg.style.top = `${imgRect.top}px`;
+    flyImg.style.left = `${imgRect.left}px`;
+    flyImg.style.width = `${imgRect.width}px`;
+    flyImg.style.height = `${imgRect.height}px`;
+
+    document.body.appendChild(flyImg);
+
+    // بدء حركة الطيران القوسية
+    requestAnimationFrame(() => {
+      flyImg.style.top = `${cartRect.top + 5}px`;
+      flyImg.style.left = `${cartRect.left + 10}px`;
+      flyImg.style.width = '25px';
+      flyImg.style.height = '25px';
+      flyImg.style.opacity = '0.4';
+    });
+
+    // عند وصول الصورة للسلة
+    setTimeout(() => {
+      flyImg.remove();
+      triggerCartBounceGlow();
+      processAddToCart(index);
+    }, 750);
+  } else {
+    processAddToCart(index);
+  }
+}
+
+function processAddToCart(index) {
   const qty = parseInt(document.getElementById(`qty-input-${index}`).value) || 1;
   const prod = allProducts[index];
 
@@ -100,22 +135,30 @@ function addToCartDirect(index) {
   }
 
   updateCartBadge();
-  triggerCartGlowEffect();
   showToast(`تمت إضافة ${qty} × "${prod.title}" إلى السلة!`);
 }
 
 function checkoutDirect(index) {
-  addToCartDirect(index);
+  processAddToCart(index);
   openCartModal();
 }
 
-function triggerCartGlowEffect() {
+// وميض واهتزاز السلة
+function triggerCartBounceGlow() {
   const cartBtn = document.getElementById('cart-header-btn');
-  cartBtn.classList.add('glow-effect');
-  setTimeout(() => { cartBtn.classList.remove('glow-effect'); }, 1200);
+  const badge = document.getElementById('cart-count');
+
+  cartBtn.classList.remove('cart-bounce-glow');
+  void cartBtn.offsetWidth; // Trigger Reflow
+  cartBtn.classList.add('cart-bounce-glow');
+
+  if (badge) {
+    badge.classList.add('pop');
+    setTimeout(() => badge.classList.remove('pop'), 300);
+  }
 }
 
-// 3. نافذة التفاصيل فقط
+// فتح وإغلاق النافذة
 function openProductModal(index) {
   const prod = allProducts[index];
   document.getElementById('modalProductImage').src = prod.image || 'https://via.placeholder.com/300';
@@ -129,7 +172,6 @@ function closeProductModal() {
   document.getElementById('productModal').style.display = 'none';
 }
 
-// 4. إدارة السلة وتأثيرات الشحن التفاعلية
 function openCartModal() {
   renderCartItems();
   updateCartTotal();
@@ -142,7 +184,13 @@ function closeCartModal() {
 
 function updateCartBadge() {
   const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
   document.getElementById('cart-count').innerText = totalCount;
+  
+  // تحديث شريط الموبايل السفلي
+  document.getElementById('mobile-cart-count-val').innerText = totalCount;
+  document.getElementById('mobile-cart-total-val').innerText = subtotal;
 }
 
 function renderCartItems() {
@@ -173,7 +221,6 @@ function removeFromCart(index) {
   updateCartTotal();
 }
 
-// تبديل اختيار بطاقة الشحن
 function selectShippingType(type) {
   document.querySelectorAll('.shipping-card').forEach(card => card.classList.remove('active'));
   
@@ -187,7 +234,6 @@ function selectShippingType(type) {
   updateCartTotal();
 }
 
-// حساب الشحن والتحديث التفاعلي
 function updateCartTotal() {
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
   document.getElementById('subtotal-val').innerText = subtotal;
@@ -231,7 +277,7 @@ function updateCartTotal() {
       shippingCost = parseInt(selectedOption.getAttribute('data-door')) || 0;
       if (liveInfoBox) {
         liveInfoBox.style.display = 'flex';
-        liveInfoText.innerText = `توصيل مباشر لباب البيت في ${selectedOption.value} (التكلفة: ${shippingCost} ج.م)`;
+        liveInfoText.innerText = `توصيل لباب البيت في ${selectedOption.value} (التكلفة: ${shippingCost} ج.م)`;
       }
     }
   } else {
@@ -242,7 +288,6 @@ function updateCartTotal() {
   document.getElementById('grandtotal-val').innerText = subtotal + shippingCost;
 }
 
-// 5. إرسال الطلب عبر الواتساب
 async function submitOrder(e) {
   e.preventDefault();
 
@@ -321,7 +366,6 @@ async function submitOrder(e) {
   }
 }
 
-// 🕒 العداد التنازلي
 function startTimer() {
   let duration = 5 * 3600;
   const timerDisplay = document.getElementById('timer');
