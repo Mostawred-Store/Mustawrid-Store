@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>مستورد أدوات صيد الأسماك</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- شريط الخصم التنازلي -->
+  <div class="top-announcement-bar">
+    🔥 عرض خاص لفترة محدودة: شحن خصم 50% عند الشراء بأكثر من 1000 ج.م! ينتهي خلال: <span id="timer">04:59:59</span>
+  </div>
+
+  <!-- إشعار إضافة منتج (Toast) -->
+  <div id="toast" class="toast">
+    <span class="toast-icon">✅</span>
+    <span id="toast-message">تمت إضافة المنتج إلى السلة بنجاح!</span>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-container">
+      <div class="logo">
+        <span class="logo-icon">🎣</span>
+        <div class="logo-text">
+          <h1>مستورد أدوات صيد</h1>
+          <p>أجود أدوات الصيد ومستلزمات البحار والأنهار</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="https://wa.me/201009802275?text=مرحبا%20احتاج%20الى%20مساعدة" target="_blank" class="support-btn">
+          <i class="fab fa-whatsapp"></i> خدمة العملاء
+        </a>
+        <!-- زر السلة التفاعلي مع تأثير الضوء -->
+        <button id="cart-header-btn" class="cart-btn" onclick="openCartModal()">
+          🛒 السلة <span id="cart-count" class="badge">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Store Features Bar -->
+  <section class="features-bar">
+    <div class="container features-container">
+      <div class="feature-item"><i class="fas fa-truck"></i> توصيل سريع لجميع المحافظات</div>
+      <div class="feature-item"><i class="fas fa-box-open"></i> معاينة المنتج قبل الاستلام</div>
+      <div class="feature-item"><i class="fas fa-hand-holding-usd"></i> الدفع عند الاستلام</div>
+    </div>
+  </section>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-content">
+      <h2>أعواد صيد كربونية، بكرات، وعوامات شحن ذكية</h2>
+      <p>تصفح منتجاتنا واختر الكميات مباشرة من الكارت بسهولة</p>
+    </div>
+  </section>
+
+  <!-- Main Products Section -->
+  <main class="container">
+    <div class="section-header">
+      <h2 class="section-title">📦 المنتجات المتاحة حالياً</h2>
+      <p class="section-subtitle">يمكنك تحديد الكمية وإضافة المنتج للسلة فوراً من الشاشة الرئيسية</p>
+    </div>
+    <div id="products-list" class="products-grid">
+      <!-- يتم تحميل المنتجات عبر JS -->
+    </div>
+  </main>
+
+  <!-- نافذة تفاصيل المنتج فقط -->
+  <div id="productModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeProductModal()">&times;</span>
+      <img id="modalProductImage" src="" alt="صورة المنتج" class="modal-product-img">
+      <h3 id="modalProductTitle" class="modal-product-title"></h3>
+      <p id="modalProductDesc" class="modal-product-desc"></p>
+      <div id="modalProductPrice" class="modal-product-price"></div>
+    </div>
+  </div>
+
+  <!-- نافذة السلة وإتمام الطلب -->
+  <div id="cartModal" class="modal">
+    <div class="modal-content modal-lg">
+      <span class="close-btn" onclick="closeCartModal()">&times;</span>
+      <h3>🛒 سلة المشتريات وإتمام الطلب</h3>
+      
+      <div id="cart-items-container" class="cart-items-list">
+        <!-- عناصر السلة -->
+      </div>
+
+      <!-- قسم الشحن التفاعلي -->
+      <div class="shipping-section-in-checkout">
+        <div class="shipping-header">
+          <h4>🚚 اختر طريقة التسليم واستلم شحنتك بسهولة</h4>
+          <!-- شريط تقدم الشحن المجاني -->
+          <div id="free-shipping-tracker" class="free-shipping-tracker">
+            <span id="free-shipping-msg">💡 أضف منتجات بقيمة 1000 ج.م للحصول على شحن مجاني!</span>
+            <div class="progress-bar"><div id="free-shipping-progress" class="progress-fill" style="width: 0%;"></div></div>
+          </div>
+        </div>
+
+        <!-- خيارات الشحن التفاعلية (Cards) -->
+        <div class="shipping-options-grid">
+          <label class="shipping-card active" id="card-door" onclick="selectShippingType('door')">
+            <input type="radio" name="shippingType" value="door" checked onchange="updateCartTotal()">
+            <div class="shipping-card-content">
+              <div class="card-icon">🏠</div>
+              <div class="card-info">
+                <span class="card-title">توصيل لباب البيت</span>
+                <span class="card-sub">توصيل مباشر حتى باب منزلكم</span>
+              </div>
+              <span class="card-badge badge-green">الأكثر طلباً 🔥</span>
+            </div>
+          </label>
+
+          <label class="shipping-card" id="card-post" onclick="selectShippingType('post')">
+            <input type="radio" name="shippingType" value="post" onchange="updateCartTotal()">
+            <div class="shipping-card-content">
+              <div class="card-icon">📮</div>
+              <div class="card-info">
+                <span class="card-title">أقرب مكتب بريد</span>
+                <span class="card-sub">استلام من الفرع بأسعار مخفضة</span>
+              </div>
+              <span class="card-badge badge-blue">سعر ثابت 45 ج.م</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- اختيار المحافظة -->
+        <div class="form-group margin-top-15">
+          <label for="shippingGov">📍 اختر المحافظة لحساب الشحن تلقائياً:</label>
+          <select id="shippingGov" onchange="updateCartTotal()" required class="styled-select">
+            <option value="">-- اختر المحافظة --</option>
+            <option value="القاهرة" data-door="73">القاهرة</option>
+            <option value="الجيزة" data-door="73">الجيزة</option>
+            <option value="الإسكندرية" data-door="85">الإسكندرية</option>
+            <option value="البحيرة" data-door="85">البحيرة</option>
+            <option value="القليوبية" data-door="84">القليوبية</option>
+            <option value="الغربية" data-door="74">الغربية</option>
+            <option value="المنوفية" data-door="84">المنوفية</option>
+            <option value="دمياط" data-door="95">دمياط</option>
+            <option value="الدقهلية" data-door="85">الدقهلية</option>
+            <option value="كفر الشيخ" data-door="85">كفر الشيخ</option>
+            <option value="مطروح" data-door="95">مطروح</option>
+            <option value="الإسماعيلية" data-door="84">الإسماعيلية</option>
+            <option value="السويس" data-door="84">السويس</option>
+            <option value="بورسعيد" data-door="85">بورسعيد</option>
+            <option value="الشرقية" data-door="84">الشرقية</option>
+            <option value="الفيوم" data-door="83">الفيوم</option>
+            <option value="بني سويف" data-door="60">بني سويف</option>
+            <option value="المنيا" data-door="55">المنيا</option>
+            <option value="أسيوط" data-door="20">أسيوط</option>
+            <option value="سوهاج" data-door="50">سوهاج</option>
+            <option value="قنا" data-door="55">قنا</option>
+            <option value="أسوان" data-door="85">أسوان</option>
+            <option value="الأقصر" data-door="73">الأقصر</option>
+            <option value="البحر الأحمر" data-door="84">البحر الأحمر</option>
+            <option value="الوادي الجديد" data-door="85">الوادي الجديد</option>
+          </select>
+        </div>
+
+        <!-- صندوق النتيجة الحية -->
+        <div id="shipping-live-info" class="shipping-live-info" style="display: none;">
+          <div class="truck-animation">🚚💨</div>
+          <div id="shipping-live-text">جاري الحساب...</div>
+        </div>
+
+        <div class="inspection-notice">
+          ✨ <strong>ضمان ذهبي:</strong> يحق لك معاينة المنتج وفتحه مع المندوب قبل دفع أي جنيه!
+        </div>
+      </div>
+
+      <div class="cart-summary">
+        <div class="summary-line">إجمالي المنتجات: <span id="subtotal-val">0</span> ج.م</div>
+        <div class="summary-line">سعر الشحن: <span id="shipping-val">0</span> ج.م</div>
+        <div class="summary-line total-line">الإجمالي النهائي: <span id="grandtotal-val">0</span> ج.م</div>
+      </div>
+
+      <form id="orderForm" onsubmit="submitOrder(event)">
+        <div class="form-group">
+          <label for="custName">الاسم بالكامل:</label>
+          <input type="text" id="custName" placeholder="أدخل اسمك الكريِم" required>
+        </div>
+
+        <div class="form-group">
+          <label for="custPhone">رقم الهاتف (واتساب):</label>
+          <input type="tel" id="custPhone" placeholder="01xxxxxxxx" required>
+        </div>
+
+        <div class="form-group">
+          <label for="custAddress">العنوان بالتفصيل:</label>
+          <textarea id="custAddress" rows="2" placeholder="المدينة / المركز - اسم الشارع - علامة مميزة" required></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-success" id="submitBtn">📲 تأكيد وإرسال الطلب عبر الواتساب</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p>جميع الحقوق محفوظة لدى مستورد أدوات صيد الأسماك 2026 ©</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
